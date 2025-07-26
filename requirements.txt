@@ -3,4 +3,5 @@ apscheduler==3.10.4
 deep-translator==1.11.4
 pytz
 aiohttp
-pydantic-core==2.18.4 --only-binary :all:
+pydantic-core==2.37.2 --only-binary :all:
+
