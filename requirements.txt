@@ -3,4 +3,3 @@ aiohttp==3.9.5
 apscheduler==3.10.4
 deep-translator==1.11.4
 pytz
-EOF
