@@ -26,14 +26,12 @@ LANGS = {
 user_lang = {}
 job_mapping = {}
 
-
 @dp.message(F.text == "/start")
 async def cmd_start(message: Message):
     keyboard = InlineKeyboardBuilder()
     for code, name in LANGS.items():
         keyboard.add(InlineKeyboardButton(text=name, callback_data=f"lang:{code}"))
     await message.answer("🌐 Choose your language / Выберите язык / Оберіть мову", reply_markup=keyboard.as_markup())
-
 
 @dp.callback_query(F.data.startswith("lang:"))
 async def set_language(callback: CallbackQuery):
@@ -45,7 +43,6 @@ async def set_language(callback: CallbackQuery):
         "uk": "✅ Мову встановлено. Надішліть нагадування як:\n- Купити молоко о 18:30\n- Купити молоко 28.07.2025 о 18:30"
     }
     await callback.message.answer(msg.get(lang, msg["en"]))
-
 
 @dp.message(F.text == "/reminders")
 async def show_reminders(message: Message):
@@ -62,7 +59,6 @@ async def show_reminders(message: Message):
         ])
         await message.answer(text, reply_markup=keyboard)
 
-
 @dp.message(F.text.startswith("/"))
 async def unknown_command(message: Message):
     lang = user_lang.get(message.from_user.id, "en")
@@ -72,7 +68,6 @@ async def unknown_command(message: Message):
         "uk": "❌ Невірний формат. Використовуйте:\n1. /start\n2. /reminders"
     }
     await message.answer(msg.get(lang, msg["en"]))
-
 
 @dp.message()
 async def handle_reminder(message: Message):
@@ -118,10 +113,13 @@ async def handle_reminder(message: Message):
         return
 
     tz = detect_timezone(message.from_user.language_code)
-    user_id = message.from_user.id
-    reminder_id = add_reminder(user_id, text.strip(), dt.astimezone(pytz.utc), tz)
+    local_tz = pytz.timezone(tz)
+    dt_localized = local_tz.localize(dt)
 
-    job = scheduler.add_job(send_reminder, "date", run_date=dt.astimezone(pytz.utc), args=[user_id, text.strip()])
+    user_id = message.from_user.id
+    reminder_id = add_reminder(user_id, text.strip(), dt_localized.astimezone(pytz.utc), tz)
+
+    job = scheduler.add_job(send_reminder, "date", run_date=dt_localized, args=[user_id, text.strip()])
     job_mapping.setdefault(user_id, {})[reminder_id] = job
 
     success_msg = {
@@ -130,7 +128,6 @@ async def handle_reminder(message: Message):
         "uk": "✅ Нагадування збережено!"
     }
     await message.answer(success_msg.get(lang, success_msg["en"]))
-
 
 @dp.callback_query(F.data.startswith("del:"))
 async def delete_reminder_cb(callback: CallbackQuery):
@@ -145,16 +142,13 @@ async def delete_reminder_cb(callback: CallbackQuery):
     lang = user_lang.get(user_id, "en")
     await callback.message.edit_text(translate("🗑️ Reminder deleted.", lang))
 
-
 async def send_reminder(user_id, text):
     await bot.send_message(user_id, f"🔔 <b>Reminder:</b> {text}")
-
 
 def translate(text, lang):
     if lang == "en":
         return text
     return GoogleTranslator(source="en", target=lang).translate(text)
-
 
 async def run_bot():
     create_table()
