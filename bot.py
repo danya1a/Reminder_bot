@@ -121,7 +121,7 @@ async def handle_reminder(message: Message):
     user_id = message.from_user.id
     reminder_id = add_reminder(user_id, text.strip(), dt.astimezone(pytz.utc), tz)
 
-    job = scheduler.add_job(send_reminder, "date", run_date=dt, args=[user_id, text.strip()])
+    job = scheduler.add_job(send_reminder, "date", run_date=dt.astimezone(pytz.utc), args=[user_id, text.strip()])
     job_mapping.setdefault(user_id, {})[reminder_id] = job
 
     success_msg = {
